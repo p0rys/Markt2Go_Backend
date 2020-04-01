@@ -134,7 +134,7 @@ namespace Markt2Go.Services.ReservationService
                 if (marketSeller != null)
                 {
                     var next = DateTime.Now.GetNextDate((DayOfWeek)marketSeller.Market.DayOfWeek);
-                    var lastReservation = next.AddHours((marketSeller.LastReservationOffset ?? 0) * -1);
+                    var lastReservation = next.AddHours(marketSeller.LastReservationOffset ?? 0);
                     if (DateTime.Now <= lastReservation)
                     {
                         var nextStart = next.SetTime(marketSeller.Market.StartTime, DateTimeKind.Local);

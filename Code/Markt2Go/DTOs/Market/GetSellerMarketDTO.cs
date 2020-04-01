@@ -14,7 +14,7 @@ namespace Markt2Go.DTOs.Market
         {
             get
             {
-                return Next.AddMinutes((LastReservationOffset ?? 0) * -1);
+                return Next.AddHours((LastReservationOffset ?? 0) * -1);
             }
         }
         public bool ReservationPossible 

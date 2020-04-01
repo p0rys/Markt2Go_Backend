@@ -25,7 +25,7 @@ namespace Markt2Go
                 
             DateTime next = DateTime.Now.GetNextDate((DayOfWeek)sourceMember.DayOfWeek);
             next = next.SetTime(sourceMember.StartTime, DateTimeKind.Local).ToUniversalTime();
-            return next.AddMinutes((source.LastReservationOffset ?? 0) * -1);
+            return next.AddHours((source.LastReservationOffset ?? 0) * -1);
         }
     }
    

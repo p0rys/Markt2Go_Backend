@@ -8,6 +8,8 @@ namespace Markt2Go.Services.PermissionService
 {
     public class PermissionService : IPermissionService
     {
+        private const int c_maxDailyReservations = 3;
+
         private readonly DataContext _context;
 
         public PermissionService(DataContext context)
@@ -45,6 +47,16 @@ namespace Markt2Go.Services.PermissionService
             // prefer AnyAsync because the sellerId would not be available when using FindAsny
             var reservation = await _context.Reservations.Include(x => x.MarketSeller).SingleOrDefaultAsync(x => x.Id == reservationId);
             return reservation == null ? false : await UserIsSeller(userId, reservation.MarketSeller.SellerId);
+        }
+    
+        public async Task<bool> MaxDailyReservationsReached(string userId, long marketId, long sellerId, DateTime pickup)
+        {
+            var reservationCount = await _context.Reservations.CountAsync(x => x.UserId == userId 
+                && x.MarketSeller.MarketId == marketId 
+                && x.MarketSeller.SellerId == sellerId 
+                && x.Pickup.Date == pickup.Date);
+                
+            return reservationCount >= c_maxDailyReservations;
         }
     }
 }

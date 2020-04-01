@@ -1,3 +1,4 @@
+using System;
 using System.Threading.Tasks;
 
 namespace Markt2Go.Services.PermissionService
@@ -9,5 +10,6 @@ namespace Markt2Go.Services.PermissionService
         Task<bool> CanReadReservation(long reservationId, string userId);
         Task<bool> CanUpdateReservation(long reservationId, string userId);
         Task<bool> CanSetReservationStatus(long reservationId, string userId);
+        Task<bool> MaxDailyReservationsReached(string userId, long marketId, long sellerId, DateTime pickup);
     }
 }

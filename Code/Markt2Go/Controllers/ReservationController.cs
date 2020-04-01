@@ -81,6 +81,10 @@ namespace Markt2Go.Controllers
             if (!await _permissionService.UserIsValidated(HttpContext.GetUserIdFromToken()))
                 return Forbid();
 
+            // check if requester has reached the maximum number of reservations
+            if (await _permissionService.MaxDailyReservationsReached(addedReservation.UserId, addedReservation.MarketId, addedReservation.SellerId, addedReservation.Pickup))
+                return Forbid();
+
             return Ok(await _reservationService.AddReservation(addedReservation));
         }
         /*         

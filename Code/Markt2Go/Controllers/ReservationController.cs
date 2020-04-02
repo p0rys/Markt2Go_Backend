@@ -22,23 +22,27 @@ namespace Markt2Go.Controllers
         private readonly IUserService _userService;
         private readonly IReservationService _reservationService;
         private readonly IPermissionService _permissionService;
-        private readonly IMailService _mailService;
-        public ReservationController(IUserService userService, IReservationService reservationService, IPermissionService permissionService, IMailService mailService)
+        public ReservationController(IUserService userService, IReservationService reservationService, IPermissionService permissionService)
         {
+            if (userService == null)
+                throw new ArgumentNullException(nameof(userService));
+
+            if (reservationService == null)
+                throw new ArgumentNullException(nameof(reservationService));
+
             if (permissionService == null)
                 throw new ArgumentNullException(nameof(permissionService));
 
             _userService = userService;
             _reservationService = reservationService;
             _permissionService = permissionService;
-            _mailService = mailService;
         }
 
 
         [HttpGet("{id}")]
         [Authorize]
         public async Task<IActionResult> GetById(long id)
-        {
+        {            
             // check if requester is allowed to read the reservation
             if (!await _permissionService.CanReadReservation(id, HttpContext.GetUserIdFromToken()))
                 return Forbid();

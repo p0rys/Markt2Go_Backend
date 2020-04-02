@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 
 using Markt2Go.Services.ReservationService;
+using System;
 
 namespace Markt2Go.Controllers
 {
@@ -15,6 +16,9 @@ namespace Markt2Go.Controllers
         private readonly IReservationService _reservationService;
         public TimeslotController(IReservationService reservationService)
         {
+            if (reservationService == null)
+                throw new ArgumentNullException(nameof(reservationService));
+                
             _reservationService = reservationService;
         }
 

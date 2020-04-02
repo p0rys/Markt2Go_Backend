@@ -26,6 +26,12 @@ namespace Markt2Go.Controllers
 
         public SellerController(ISellerService sellerService, IMarketService marketService, IUserService userService, IPermissionService permissionService)
         {
+            if (sellerService == null)
+                throw new ArgumentNullException(nameof(sellerService));
+            if (marketService == null)
+                throw new ArgumentNullException(nameof(marketService));
+            if (userService == null)          
+                throw new ArgumentNullException(nameof(userService));
             if (permissionService == null)
                 throw new ArgumentNullException(nameof(permissionService));
 

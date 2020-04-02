@@ -27,6 +27,13 @@ namespace Markt2Go.Controllers
         private readonly IUserService _userService;
         public UserController(IUserService userService, IConfiguration configuration, IHttpClientFactory httpClientFactory)
         {
+            if (userService == null)
+                throw new ArgumentNullException(nameof(userService));
+            if (configuration == null)
+                throw new ArgumentNullException(nameof(configuration));
+            if (httpClientFactory == null)
+                throw new ArgumentNullException(nameof(httpClientFactory));
+
             _userService = userService;
             _configuration = configuration;
             _httpClientFactory = httpClientFactory;
@@ -68,6 +75,7 @@ namespace Markt2Go.Controllers
         {
             try
             {
+                var test = _configuration["Auth0:ApiIdentifier"];
                 // request user information from auth0
                 var userInformation = await GetAuth0UserInformation();
                 var userId = userInformation.Single(x => x.Key == "sub").Value;

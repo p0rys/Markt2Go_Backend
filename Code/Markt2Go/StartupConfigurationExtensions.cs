@@ -9,6 +9,8 @@ using Markt2Go.Services.UserService;
 using Markt2Go.Services.SellerService;
 using Markt2Go.Services.ReservationService;
 using Markt2Go.Services.PermissionService;
+using Microsoft.AspNetCore.Builder;
+using System.Linq;
 
 namespace Markt2Go
 {    
@@ -33,6 +35,26 @@ namespace Markt2Go
         {
             services.AddHttpClient();
             services.AddAutoMapper(typeof(Startup));
+        }
+
+        public static void CheckDatabase(this IApplicationBuilder app)
+        {
+            using (var serviceScope = app.ApplicationServices
+                .GetRequiredService<IServiceScopeFactory>()
+                .CreateScope())
+            {
+                using (var context = serviceScope.ServiceProvider.GetService<DataContext>())
+                {
+                    // check if database exists, if not create it
+                    context.Database.EnsureCreated();
+
+                    var pendingMigrations = context.Database.GetPendingMigrations();
+                    if (pendingMigrations.Count() > 0)
+                    {
+                        throw new DbUpdateException($"Database is missing the following migrations: {string.Join(", ", pendingMigrations)}");
+                    }
+                }
+            }
         }
     }
 }

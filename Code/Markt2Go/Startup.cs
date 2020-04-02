@@ -39,6 +39,7 @@ namespace Markt2Go
             {
                 app.UseDeveloperExceptionPage();
             }
+            app.UseRouting();
             // return files from "wwwroot" if no api route is matched
             app.UseStaticFiles();
             // search for (and serve) default files (default.htm, default.html, index.htm, index.html) from wwwroot
@@ -49,7 +50,6 @@ namespace Markt2Go
             app.UseAuth0();
             // check if database exists, create when needed and check if all migrations are applied
             app.CheckDatabase();
-            app.UseRouting();
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();

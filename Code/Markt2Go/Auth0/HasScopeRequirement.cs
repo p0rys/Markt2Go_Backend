@@ -1,7 +1,7 @@
 using System;
 using Microsoft.AspNetCore.Authorization;
 
-namespace Markt2Go
+namespace Markt2Go.Auth0
 {
     public class HasScopeRequirement : IAuthorizationRequirement
     {

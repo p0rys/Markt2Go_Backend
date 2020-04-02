@@ -2,7 +2,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 
-namespace Markt2Go
+namespace Markt2Go.Auth0
 {
     public class HasScopeHandler : AuthorizationHandler<HasScopeRequirement>
     {

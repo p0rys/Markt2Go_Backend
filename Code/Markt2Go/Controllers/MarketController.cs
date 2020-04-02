@@ -55,29 +55,23 @@ namespace Markt2Go.Controllers
         }
 
         [HttpPost]
-        [Authorize]
+        [Authorize("add:market")]
         public async Task<IActionResult> Add([FromBody] AddMarketDTO addedMarket)
         {
-            return Forbid();
-
             return Ok(await _marketService.AddMarket(addedMarket));
         }
 
         [HttpPut]
-        [Authorize]
+        [Authorize("update:market")]
         public async Task<IActionResult> Update([FromBody] UpdateMarketDTO updatedMarket)
         {
-            return Forbid();
-
             return Ok(await _marketService.UpdateMarket(updatedMarket));
         }
 
         [HttpDelete("{id}")]
-        [Authorize]
+        [Authorize("delete:market")]
         public async Task<IActionResult> Delete(long id)
         {
-            return Forbid();
-
             return Ok(await _marketService.DeleteMarket(id));
         }
     }

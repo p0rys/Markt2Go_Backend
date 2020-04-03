@@ -40,10 +40,10 @@ namespace Markt2Go
                 app.UseDeveloperExceptionPage();
             }
             app.UseRouting();
-            // return files from "wwwroot" if no api route is matched
-            app.UseStaticFiles();
             // search for (and serve) default files (default.htm, default.html, index.htm, index.html) from wwwroot
             app.UseDefaultFiles();
+            // return files from "wwwroot" if no api route is matched
+            app.UseStaticFiles();
             // http to https redirection
             app.UseHttpsRedirection();
             // set all authorization / authentication for auth0

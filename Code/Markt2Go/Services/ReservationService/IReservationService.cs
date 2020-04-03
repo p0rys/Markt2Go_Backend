@@ -15,6 +15,7 @@ namespace Markt2Go.Services.ReservationService
         Task<ServiceResponse<List<GetReservationDTO>>> GetReservationsByUser(string userId, long? marketId, DateTime createdSince, DateTime pickupSince, DateTime pickup, StatusEnum? status);
         Task<ServiceResponse<List<GetReservationDTO>>> GetReservationsBySeller(long sellerId, long? marketId, DateTime createdSince, DateTime pickupSince, DateTime pickup, StatusEnum? status);
         Task<ServiceResponse<List<GetTimeslotDTO>>> GetTimeslots(long marketId, long sellerId);
+        Task<ServiceResponse<byte[]>> GetReservationsAsExcelFile(long marketId, long sellerId, DateTime pickup, StatusEnum? status);
 
         Task<ServiceResponse<GetReservationDTO>> AddReservation(AddReservationDTO newReservation);
         Task<ServiceResponse<GetReservationDTO>> UpdateReservation(UpdateReservationDTO updatedReservation);

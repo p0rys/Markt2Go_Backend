@@ -1,6 +1,9 @@
 using AutoMapper;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.EntityFrameworkCore;
+using System.Linq;
+
+using Microsoft.AspNetCore.Builder;
 
 using Markt2Go.Data;
 using Markt2Go.Services.MailService;
@@ -9,8 +12,7 @@ using Markt2Go.Services.UserService;
 using Markt2Go.Services.SellerService;
 using Markt2Go.Services.ReservationService;
 using Markt2Go.Services.PermissionService;
-using Microsoft.AspNetCore.Builder;
-using System.Linq;
+using Markt2Go.Services.FileService;
 
 namespace Markt2Go
 {    
@@ -25,6 +27,7 @@ namespace Markt2Go
             services.AddScoped<IMarketService, MarketService>();
             services.AddScoped<ISellerService, SellerService>();
             services.AddScoped<IReservationService, ReservationService>();
+            services.AddScoped<IFileService, FileService>();
         }
         public static void AddDataAccessLayer(this IServiceCollection services, string connectionString)
         {

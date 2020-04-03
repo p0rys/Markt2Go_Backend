@@ -5,10 +5,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 
 using Markt2Go.DTOs.Reservation;
-using Markt2Go.Services.MailService;
 using Markt2Go.Services.PermissionService;
 using Markt2Go.Services.ReservationService;
-using Markt2Go.Services.UserService;
 using Markt2Go.Shared.Extensions;
 using Markt2Go.Shared.Enums;
 
@@ -18,22 +16,17 @@ namespace Markt2Go.Controllers
     [Authorize]
     [Route("api/[controller]")]
     public class ReservationController : ControllerBase
-    {
-        private readonly IUserService _userService;
+    {        
         private readonly IReservationService _reservationService;
         private readonly IPermissionService _permissionService;
-        public ReservationController(IUserService userService, IReservationService reservationService, IPermissionService permissionService)
+        public ReservationController(IReservationService reservationService, IPermissionService permissionService)
         {
-            if (userService == null)
-                throw new ArgumentNullException(nameof(userService));
-
             if (reservationService == null)
                 throw new ArgumentNullException(nameof(reservationService));
 
             if (permissionService == null)
                 throw new ArgumentNullException(nameof(permissionService));
 
-            _userService = userService;
             _reservationService = reservationService;
             _permissionService = permissionService;
         }
@@ -70,6 +63,22 @@ namespace Markt2Go.Controllers
                 return Forbid();
 
             return Ok(await _reservationService.GetReservationsBySeller(sellerId, marketId, createdSince, pickupSince, pickup, status));
+        }
+
+        [HttpGet("Excel/{marketId}/{sellerId}/{pickup}")]
+        [Authorize]
+        public async Task<IActionResult> GetReservationsAsExcel(long marketId, long sellerId, DateTime pickup, StatusEnum? status)
+        {
+            // check if requester is part of the requested seller
+            if (!await _permissionService.UserIsSeller(HttpContext.GetUserIdFromToken(), sellerId))
+                return Forbid();
+
+            // if creating file was successful send file, if not send a HTTP 200 with the error message
+            var fileRequest = await _reservationService.GetReservationsAsExcelFile(marketId, sellerId, pickup, status);
+            if (fileRequest.Success)
+                return File(fileRequest.Data, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", $"Reservierungen_{pickup.ToShortDateString()}.xlsx");
+            else
+                return Ok(fileRequest);
         }
 
 

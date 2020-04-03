@@ -14,6 +14,7 @@ using Markt2Go.Services.MailService;
 using Markt2Go.Shared.Enums;
 using Markt2Go.Shared.Helper;
 using Markt2Go.Shared.Extensions;
+using Markt2Go.Services.FileService;
 
 namespace Markt2Go.Services.ReservationService
 {
@@ -22,8 +23,9 @@ namespace Markt2Go.Services.ReservationService
         private readonly IMapper _mapper;
         private readonly DataContext _context;
         private readonly IMailService _mailService;
+        private readonly IFileService _fileService;
 
-        public ReservationService(IMapper mapper, DataContext context, IMailService mailService)
+        public ReservationService(IMapper mapper, DataContext context, IMailService mailService, IFileService fileService)
         {
             if (mapper == null)
                 throw new ArgumentNullException(nameof(mapper));
@@ -31,17 +33,21 @@ namespace Markt2Go.Services.ReservationService
                 throw new ArgumentNullException(nameof(context));
             if (mailService == null)
                 throw new ArgumentNullException(nameof(mailService));
+            if (fileService == null)
+                throw new ArgumentNullException(nameof(fileService));
 
             _mapper = mapper;
             _context = context;
             _mailService = mailService;
+            _fileService = fileService;
         }
 
 
         public async Task<ServiceResponse<List<GetReservationDTO>>> GetAllReservations()
         {
             ServiceResponse<List<GetReservationDTO>> serviceResponse = new ServiceResponse<List<GetReservationDTO>>();
-            serviceResponse.Data = await GetReservations();
+            var reservations = await GetReservations();
+            serviceResponse.Data = reservations.Select(x => _mapper.Map<GetReservationDTO>(x)).ToList();
             return serviceResponse;
         }
         public async Task<ServiceResponse<GetReservationDTO>> GetReservationById(long id)
@@ -67,13 +73,15 @@ namespace Markt2Go.Services.ReservationService
         public async Task<ServiceResponse<List<GetReservationDTO>>> GetReservationsByUser(string userId, long? marketId, DateTime createdSince, DateTime pickupSince, DateTime pickup, StatusEnum? status)
         {
             ServiceResponse<List<GetReservationDTO>> serviceResponse = new ServiceResponse<List<GetReservationDTO>>();
-            serviceResponse.Data = await GetReservations(userId: userId, marketId: marketId, createdSince: createdSince, pickupSince: pickupSince, pickup: pickup, status: status);
+            var reservations = await GetReservations(userId: userId, marketId: marketId, createdSince: createdSince, pickupSince: pickupSince, pickup: pickup, status: status);
+            serviceResponse.Data = reservations.Select(x => _mapper.Map<GetReservationDTO>(x)).ToList(); 
             return serviceResponse;
         }
         public async Task<ServiceResponse<List<GetReservationDTO>>> GetReservationsBySeller(long sellerId, long? marketId, DateTime createdSince, DateTime pickupSince, DateTime pickup, StatusEnum? status)
         {
             ServiceResponse<List<GetReservationDTO>> serviceResponse = new ServiceResponse<List<GetReservationDTO>>();
-            serviceResponse.Data = await GetReservations(sellerId: sellerId, marketId: marketId, createdSince: createdSince, pickupSince: pickupSince, pickup: pickup, status: status);
+            var reservations = await GetReservations(sellerId: sellerId, marketId: marketId, createdSince: createdSince, pickupSince: pickupSince, pickup: pickup, status: status);
+            serviceResponse.Data = reservations.Select(x => _mapper.Map<GetReservationDTO>(x)).ToList(); 
             return serviceResponse;
         }
         /*
@@ -124,6 +132,32 @@ namespace Markt2Go.Services.ReservationService
             }
             return serviceResponse;
         }
+        public async Task<ServiceResponse<byte[]>> GetReservationsAsExcelFile(long marketId, long sellerId, DateTime pickup, StatusEnum? status)
+        {
+            ServiceResponse<byte[]> serviceResponse = new ServiceResponse<byte[]>();
+            try
+            {
+                var market = await _context.Markets.FindAsync(marketId);
+                var reservations = await GetReservations(marketId: marketId, sellerId: sellerId, pickup: pickup, status: status);
+                var orderedReservations = reservations.OrderBy(x => x.Pickup).ToList();
+                if (market != null)
+                {
+                    serviceResponse.Data = _fileService.CreateReservationExcelFile(market.Name, pickup, orderedReservations);                    
+                }
+                else
+                {
+                    serviceResponse.Success = false;
+                    serviceResponse.Message = $"Could not found market with id '{marketId}'.";
+                }
+            }
+            catch (Exception ex)
+            {
+                serviceResponse.Success = false;
+                serviceResponse.Exception = ex.Message;
+            }
+            return serviceResponse;
+        }
+
 
         public async Task<ServiceResponse<GetReservationDTO>> AddReservation(AddReservationDTO newReservation)
         {
@@ -297,8 +331,8 @@ namespace Markt2Go.Services.ReservationService
                         else
                             await _mailService.SendReservationDeclined(reservation.User.Mail, placeholders);
                     }
-                    if (reservation.Packed)
-                        await _mailService.SendReservationPacked(reservation.User.Mail, placeholders);
+                    //if (reservation.Packed)
+                    //    await _mailService.SendReservationPacked(reservation.User.Mail, placeholders);
 
                     serviceResponse.Data = _mapper.Map<GetReservationDTO>(reservation);
                 }
@@ -378,7 +412,7 @@ namespace Markt2Go.Services.ReservationService
         */
     
         
-        private async Task<List<GetReservationDTO>> GetReservations(long? id = null, long? sellerId = null, long? marketId = null, string userId = null,
+        private async Task<List<Reservation>> GetReservations(long? id = null, long? sellerId = null, long? marketId = null, string userId = null,
             DateTime createdSince = new DateTime(), DateTime pickupSince = new DateTime(), DateTime pickup = new DateTime(), StatusEnum? status = null)
         {
             bool onlyNew = (status == StatusEnum.New);
@@ -415,7 +449,7 @@ namespace Markt2Go.Services.ReservationService
                     && (packed.HasValue ? x.Packed == packed.Value : true))
                 .ToListAsync();
 
-            return dbReservations.Select(x => _mapper.Map<GetReservationDTO>(x)).ToList();
+            return dbReservations.ToList();
         }
         private Dictionary<string, string> CreatePlaceholders(Reservation reservation, Market market, Seller seller, User user)
         {
@@ -433,5 +467,6 @@ namespace Markt2Go.Services.ReservationService
                     { "{itemTable}", $"{itemTable}" }
                 };
         }
+ 
     }
 }

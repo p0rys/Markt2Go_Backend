@@ -51,7 +51,8 @@ namespace Markt2Go
                     var pendingMigrations = context.Database.GetPendingMigrations();
                     if (pendingMigrations.Count() > 0)
                     {
-                        throw new DbUpdateException($"Database is missing the following migrations: {string.Join(", ", pendingMigrations)}");
+                        // TODO: Not working when database is new created (ef migrations missing)
+                        //throw new DbUpdateException($"Database is missing the following migrations: {string.Join(", ", pendingMigrations)}");
                     }
                 }
             }

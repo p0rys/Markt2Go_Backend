@@ -1,8 +1,6 @@
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 
-using Newtonsoft.Json.Linq;
-
 using Markt2Go.Shared.Helper;
 
 namespace Markt2Go.DTOs.Seller
@@ -27,8 +25,7 @@ namespace Markt2Go.DTOs.Seller
         public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
         {
             // check if portfolio is a valid json
-            JToken result = new JObject();
-            if (!JsonHelper.TryParseJSON(Portfolio, out result))
+            if (!JsonHelper.IsValidJson(Portfolio))
             {
                 yield return new ValidationResult(
                     $"{nameof(Portfolio)} must be a valid json object.",

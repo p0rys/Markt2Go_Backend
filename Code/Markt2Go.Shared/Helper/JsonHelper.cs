@@ -1,19 +1,18 @@
-using Newtonsoft.Json.Linq;
+using System.Text.Json;
 
 namespace Markt2Go.Shared.Helper
 {
     public class JsonHelper
     {
-        public static bool TryParseJSON(string json, out JToken jObject)
+        public static bool IsValidJson(string json)
         {
             try
             {
-                jObject = JToken.Parse(json);
+                var jsonObject = JsonDocument.Parse(json);
                 return true;
             }
             catch
             {
-                jObject = null;
                 return false;
             }
         }

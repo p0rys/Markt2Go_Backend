@@ -1,8 +1,10 @@
+using System.Net.Http;
+using System.Net;
+using System.Linq;
+
 using AutoMapper;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.EntityFrameworkCore;
-using System.Linq;
-
 using Microsoft.AspNetCore.Builder;
 
 using Markt2Go.Data;
@@ -13,6 +15,7 @@ using Markt2Go.Services.SellerService;
 using Markt2Go.Services.ReservationService;
 using Markt2Go.Services.PermissionService;
 using Markt2Go.Services.FileService;
+
 
 namespace Markt2Go
 {    
@@ -34,9 +37,24 @@ namespace Markt2Go
             // add data layer
             services.AddDbContext<DataContext>(options => options.UseSqlServer(connectionString));
         }
-        public static void AddHelper(this IServiceCollection services)
+        public static void AddHelper(this IServiceCollection services, bool useProxy, string proxyAddress)
         {
-            services.AddHttpClient();
+            // add HttpClientFactory with proxy if needed
+            if (useProxy)
+            {
+                  services.AddHttpClient("Default")
+                    .ConfigurePrimaryHttpMessageHandler(() =>
+                    {
+                        return new HttpClientHandler
+                        {
+                            UseProxy = useProxy,
+                            Proxy = new WebProxy(proxyAddress)
+                        };
+                    });
+            }
+            else
+                services.AddHttpClient("Default");
+
             services.AddAutoMapper(typeof(Startup));
         }
 

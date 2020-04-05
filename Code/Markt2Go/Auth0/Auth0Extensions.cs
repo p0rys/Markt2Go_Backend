@@ -1,3 +1,6 @@
+using System.Net;
+using System.Net.Http;
+
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
@@ -7,17 +10,25 @@ namespace Markt2Go.Auth0
 {
     public static class Auth0Extension
     {
-        public static void AddAuth0(this IServiceCollection services, string authority, string audience)
+        public static void AddAuth0(this IServiceCollection services, string authority, string audience, bool useProxy, string proxyAddress)
         {
             // add token authorization with auth0 authority and apiId as audience
-            services.AddAuthentication(options =>
+            services.AddAuthentication(authOptions =>
             {
-                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-            }).AddJwtBearer(options =>
+                authOptions.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                authOptions.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+            }).AddJwtBearer(jwtBearerOptions =>
             {
-                options.Authority = authority;
-                options.Audience = audience;
+                // this will redirect jwt authentification requests through the given proxy (needed for deployment on IONOS)
+                if (useProxy)
+                {
+                    jwtBearerOptions.BackchannelHttpHandler = new HttpClientHandler
+                    {
+                        Proxy = new WebProxy(proxyAddress)
+                    };
+                }
+                jwtBearerOptions.Authority = authority;
+                jwtBearerOptions.Audience = audience;
             });
 
             // add permission based authorization

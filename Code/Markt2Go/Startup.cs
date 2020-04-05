@@ -1,3 +1,5 @@
+using System;
+
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -20,8 +22,12 @@ namespace Markt2Go
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            var useProxy = Convert.ToBoolean(Configuration["Proxy:Use"]);
+            var proxyAddress = Configuration["Proxy:Address"];
+            var proxyPort = Configuration["Proxy:Port"];
+
             // add helpers such as automapper
-            services.AddHelper();
+            services.AddHelper(useProxy, $"{proxyAddress}:{proxyPort}");
             // add everything that is needed by the DAL
             services.AddDataAccessLayer(Configuration["ConnectionStrings:DefaultConnection"]);
             // add all services needed for the business logic
@@ -29,7 +35,7 @@ namespace Markt2Go
             // add controllers
             services.AddControllers();
             // add authentication and authorization via auth0
-            services.AddAuth0(Configuration["Auth0:Domain"], Configuration["Auth0:ApiIdentifier"]);            
+            services.AddAuth0(Configuration["Auth0:Domain"], Configuration["Auth0:ApiIdentifier"], useProxy, $"{proxyAddress}:{proxyPort}");         
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

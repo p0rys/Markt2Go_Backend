@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Globalization;
 
 using AutoMapper;
 using Microsoft.EntityFrameworkCore;
@@ -15,6 +16,7 @@ using Markt2Go.Shared.Enums;
 using Markt2Go.Shared.Helper;
 using Markt2Go.Shared.Extensions;
 using Markt2Go.Services.FileService;
+
 
 namespace Markt2Go.Services.ReservationService
 {
@@ -453,15 +455,15 @@ namespace Markt2Go.Services.ReservationService
         }
         private Dictionary<string, string> CreatePlaceholders(Reservation reservation, Market market, Seller seller, User user)
         {
-            var itemTable = string.Join("\r\n", reservation.Items.Select(x => $"\t-\t\t {x.Amount} {x.Unit} {x.Name}"));
+            var itemTable = string.Join("\r\n", reservation.Items.Select(x => $"\t-\t\t {x.Amount.ToString(CultureInfo.GetCultureInfo("de-DE"))} {x.Unit} {x.Name}"));
             return new Dictionary<string, string>()
                 {
                     { "{recipientName}", $"{reservation.User.Firstname} {reservation.User.Lastname}" },
                     { "{sellerName}", $"{seller.Name}" },
                     { "{marketName}", $"{market.Name}" },
                     { "{reservationId}", $"{(reservation.Id)}" },
-                    { "{pickupTime}", $"{String.Format("{0:f}", reservation.Pickup.ToLocalTime())}" },
-                    { "{pickupTimeShort}", $"{String.Format("{0:g}", reservation.Pickup.ToLocalTime())}" },
+                    { "{pickupTime}", $"{reservation.Pickup.ToLocalTime().ToString("f", CultureInfo.GetCultureInfo("de-DE"))} Uhr" },
+                    { "{pickupTimeShort}", $"{reservation.Pickup.ToLocalTime().ToString("g", CultureInfo.GetCultureInfo("de-DE"))} Uhr" },
                     { "{sellerComment}", $"{reservation.SellerComment}" },
                     { "{price}", $"{(reservation.Price)}" },
                     { "{itemTable}", $"{itemTable}" }

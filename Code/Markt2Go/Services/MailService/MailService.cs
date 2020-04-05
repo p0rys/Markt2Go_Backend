@@ -6,17 +6,18 @@ using System.Text.RegularExpressions;
 using Microsoft.Extensions.Configuration;
 
 using MimeKit;
+using MailKit.Security;
 using MailKit.Net.Smtp;
 
 namespace Markt2Go.Services.MailService
 {
     public class MailService : IMailService
     {
-        IConfiguration _configuration;
+        private readonly IConfiguration _configuration;
         public MailService(IConfiguration configuration)
         {
             if (configuration == null)
-                throw new ArgumentNullException("configuration");
+                throw new ArgumentNullException(nameof(configuration));         
 
             _configuration = configuration;
         }
@@ -80,16 +81,18 @@ namespace Markt2Go.Services.MailService
             var smtpAddress = _configuration["SMTP:Address"];
             var smtpPort = Convert.ToInt32(_configuration["SMTP:Port"]);
             var smtpUseSSL = Convert.ToBoolean(_configuration["SMTP:UseSSL"]);
+            var smtpUseTLS = Convert.ToBoolean(_configuration["SMTP:UseTLS"]);
+            var smtpUseAuthentication = Convert.ToBoolean(_configuration["SMTP:UseAuthentication"]);
             var smtpUser = _configuration["SMTP:User"];
             var smtpPassword = _configuration["SMTP:Password"];
 
             using (var client = new SmtpClient())
             {
-                // For demo-purposes, accept all SSL certificates (in case the server supports STARTTLS)
-                client.ServerCertificateValidationCallback = (s, c, h, e) => true;
-
-                await client.ConnectAsync(smtpAddress, smtpPort, smtpUseSSL);
-                await client.AuthenticateAsync(smtpUser, smtpPassword);
+                await client.ConnectAsync(smtpAddress, smtpPort, (smtpUseTLS ? SecureSocketOptions.Auto : SecureSocketOptions.None));
+                if (smtpUseAuthentication)
+                {
+                    await client.AuthenticateAsync(smtpUser, smtpPassword);
+                }
                 await client.SendAsync(message);
                 await client.DisconnectAsync(true);
             }

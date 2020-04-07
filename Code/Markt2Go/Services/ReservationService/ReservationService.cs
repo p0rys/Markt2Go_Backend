@@ -169,12 +169,16 @@ namespace Markt2Go.Services.ReservationService
                 var marketSeller = await _context.MarketSellers.Include(x => x.Market).Include(x => x.Seller).FirstOrDefaultAsync(x => x.SellerId == newReservation.SellerId && x.MarketId == newReservation.MarketId);
                 if (marketSeller != null)
                 {
+                    // get next market day
                     var next = DateTime.Now.GetNextDate((DayOfWeek)marketSeller.Market.DayOfWeek);
-                    var lastReservation = next.AddHours(marketSeller.LastReservationOffset ?? 0);
+                    // get start and end time on the next market day
+                    var nextStart = next.SetTime(marketSeller.Market.StartTime, DateTimeKind.Local);
+                    var nextEnd = next.SetTime(marketSeller.Market.EndTime, DateTimeKind.Local);
+                    // get the time until the seller will accepted reservations
+                    var lastReservation = nextStart.AddHours(marketSeller.LastReservationOffset ?? 0);
+                    // check if seller is still accepting reservations
                     if (DateTime.Now <= lastReservation)
-                    {
-                        var nextStart = next.SetTime(marketSeller.Market.StartTime, DateTimeKind.Local);
-                        var nextEnd = next.SetTime(marketSeller.Market.EndTime, DateTimeKind.Local);
+                    {                        
                         if (newReservation.Pickup >= nextStart.ToUniversalTime() && newReservation.Pickup <= nextEnd.ToUniversalTime())
                         {
                             Reservation reservation = _mapper.Map<Reservation>(newReservation);

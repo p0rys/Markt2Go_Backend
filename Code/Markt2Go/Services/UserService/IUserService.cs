@@ -9,7 +9,7 @@ namespace Markt2Go.Services.UserService
         Task<ServiceResponse<List<GetUserDTO>>> GetAllUsers();
         Task<ServiceResponse<GetUserDTO>> GetUser(string id);
 
-        Task<ServiceResponse<GetUserDTO>> AddUser(string id, string name, string mail, AddUserDTO newUser);
+        Task<ServiceResponse<GetUserDTO>> AddUser(string id, AddUserDTO newUser);
         Task<ServiceResponse<GetUserDTO>> UpdateUser(UpdateUserDTO updatedUser);
         Task<ServiceResponse<GetUserDTO>> DeleteUser(string id);
 

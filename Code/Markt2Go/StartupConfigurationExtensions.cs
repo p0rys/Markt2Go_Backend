@@ -15,7 +15,7 @@ using Markt2Go.Services.SellerService;
 using Markt2Go.Services.ReservationService;
 using Markt2Go.Services.PermissionService;
 using Markt2Go.Services.FileService;
-
+using Markt2Go.Services.Auth0Service;
 
 namespace Markt2Go
 {    
@@ -31,6 +31,7 @@ namespace Markt2Go
             services.AddScoped<ISellerService, SellerService>();
             services.AddScoped<IReservationService, ReservationService>();
             services.AddScoped<IFileService, FileService>();
+            services.AddScoped<IAuth0Service, Auth0Service>();
         }
         public static void AddDataAccessLayer(this IServiceCollection services, string connectionString)
         {

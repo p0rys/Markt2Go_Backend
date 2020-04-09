@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Net.Http;
+using System.Net.Http.Headers;
 
 using AutoMapper;
 using Microsoft.EntityFrameworkCore;
@@ -9,6 +11,7 @@ using Microsoft.EntityFrameworkCore;
 using Markt2Go.Data;
 using Markt2Go.Model;
 using Markt2Go.DTOs.User;
+using Markt2Go.Services.Auth0Service;
 
 namespace Markt2Go.Services.UserService
 {
@@ -16,11 +19,20 @@ namespace Markt2Go.Services.UserService
     {
         private readonly IMapper _mapper;
         private readonly DataContext _context;
+        private readonly IAuth0Service _auth0Service;
 
-        public UserService(IMapper mapper, DataContext context)
+        public UserService(IMapper mapper, DataContext context, IAuth0Service auth0Service)
         {
+            if (mapper == null)
+                throw new ArgumentNullException(nameof(mapper));
+            if (context == null)
+                throw new ArgumentNullException(nameof(context));
+            if (auth0Service == null)
+                throw new ArgumentNullException(nameof(auth0Service));
+
             _mapper = mapper;
             _context = context;
+            _auth0Service = auth0Service;
         }
 
         public async Task<ServiceResponse<List<GetUserDTO>>> GetAllUsers()
@@ -38,26 +50,45 @@ namespace Markt2Go.Services.UserService
             return serviceResponse;
         }
 
-        public async Task<ServiceResponse<GetUserDTO>> AddUser(string id, string name, string mail, AddUserDTO newUser)
+        public async Task<ServiceResponse<GetUserDTO>> AddUser(string userToken, AddUserDTO newUser)
         {
             ServiceResponse<GetUserDTO> serviceResponse = new ServiceResponse<GetUserDTO>();
-            if (await _context.Users.FindAsync(id) == null)
+            try
             {
-                var user = _mapper.Map<User>(newUser);
-                user.Id = id;
-                user.Name = name;
-                user.Mail = mail;
-                user.CreatedAt = DateTime.Now.ToUniversalTime();
+                var userInformation = await _auth0Service.GetUserInfo(userToken);
+                if (userInformation.ContainsKey("sub") && userInformation.ContainsKey("name") && userInformation.ContainsKey("email"))
+                {
+                    var userId = userInformation["sub"].ToString();
+                    if (await _context.Users.FindAsync(userId) == null)
+                    {
+                        var user = _mapper.Map<User>(newUser);
+                        user.Id = userId;
+                        user.Name = userInformation["name"].ToString();
+                        user.Mail = userInformation["email"].ToString();
+                        user.CreatedAt = DateTime.Now.ToUniversalTime();
 
-                await _context.Users.AddAsync(user);
-                await _context.SaveChangesAsync();
+                        await _context.Users.AddAsync(user);
+                        await _context.SaveChangesAsync();
 
-                serviceResponse.Data = _mapper.Map<GetUserDTO>(user);
+                        serviceResponse.Data = _mapper.Map<GetUserDTO>(user);
+                    }
+                    else
+                    {
+                        serviceResponse.Success = false;
+                        serviceResponse.Message = $"User with id '{userId}' already exists.";
+                    }
+                }
+                else
+                {
+                    serviceResponse.Success = false;
+                    serviceResponse.Message = $"Could not get all needed user information from auth0.";
+                }
+
             }
-            else
+            catch (Exception ex)
             {
                 serviceResponse.Success = false;
-                serviceResponse.Message = $"User with id '{id}' already exists.";
+                serviceResponse.Exception = ex.Message;
             }
             return serviceResponse;
         }
@@ -104,16 +135,34 @@ namespace Markt2Go.Services.UserService
             try
             {
                 var user = await _context.Users.FindAsync(id);
-                if (user != null)
+                var reservations = _context.Reservations.Where(x => x.UserId == id);
+                var hasOpenReservations = await reservations.AnyAsync(x => x.Pickup > DateTime.UtcNow);
+
+                // check for open reservations
+                if (hasOpenReservations)
                 {
-                    _context.Users.Remove(user);
-                    await _context.SaveChangesAsync();
-                    serviceResponse.Data = _mapper.Map<GetUserDTO>(user);
+                    serviceResponse.Success = false;
+                    serviceResponse.Message = $"User with id '{id}' has still open reservations and could not be deleted.";
+                    return serviceResponse;
+                }
+
+                // try to delete auth0 user
+                if (await _auth0Service.DeleteUser(id))
+                {
+                    // delete user from database if present
+                    if (user != null)
+                    {
+                        // delete "old" reservations and user
+                        _context.Reservations.RemoveRange(reservations);
+                        _context.Users.Remove(user);
+                        await _context.SaveChangesAsync();
+                        serviceResponse.Data = _mapper.Map<GetUserDTO>(user);
+                    }
                 }
                 else
                 {
                     serviceResponse.Success = false;
-                    serviceResponse.Message = $"Could not found user with id '{id}'";
+                    serviceResponse.Message = $"Could not delete user with id '{id}' from auth0.";
                 }
             }
             catch (Exception ex)

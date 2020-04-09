@@ -21,7 +21,7 @@ namespace Markt2Go.DTOs.Market
         {
             get            
             {
-                return DateTime.Now.ToUniversalTime() < LastReservation;
+                return DateTime.UtcNow < LastReservation;
             }
         }
     }

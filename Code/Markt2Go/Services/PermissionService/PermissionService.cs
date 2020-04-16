@@ -25,11 +25,6 @@ namespace Markt2Go.Services.PermissionService
             var user = await _context.Users.FindAsync(userId);
             return user == null ? false : user.SellerId == sellerId;
         }
-        public async Task<bool> UserIsValidated(string userId)
-        {
-            var user = await _context.Users.FindAsync(userId);
-            return user?.IsValidated ?? false;
-        }
 
         public async Task<bool> CanReadReservation(long reservationId, string userId)
         {

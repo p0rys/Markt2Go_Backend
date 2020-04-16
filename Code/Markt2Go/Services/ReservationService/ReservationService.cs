@@ -16,7 +16,7 @@ using Markt2Go.Shared.Enums;
 using Markt2Go.Shared.Helper;
 using Markt2Go.Shared.Extensions;
 using Markt2Go.Services.FileService;
-
+using Markt2Go.Services.Auth0Service;
 
 namespace Markt2Go.Services.ReservationService
 {
@@ -26,8 +26,9 @@ namespace Markt2Go.Services.ReservationService
         private readonly DataContext _context;
         private readonly IMailService _mailService;
         private readonly IFileService _fileService;
+        private readonly IAuth0Service _auth0Service;
 
-        public ReservationService(IMapper mapper, DataContext context, IMailService mailService, IFileService fileService)
+        public ReservationService(IMapper mapper, DataContext context, IMailService mailService, IFileService fileService, IAuth0Service auth0Service)
         {
             if (mapper == null)
                 throw new ArgumentNullException(nameof(mapper));
@@ -37,11 +38,14 @@ namespace Markt2Go.Services.ReservationService
                 throw new ArgumentNullException(nameof(mailService));
             if (fileService == null)
                 throw new ArgumentNullException(nameof(fileService));
+            if (auth0Service == null)
+                throw new ArgumentNullException(nameof(auth0Service));
 
             _mapper = mapper;
             _context = context;
             _mailService = mailService;
             _fileService = fileService;
+            _auth0Service = auth0Service;
         }
 
 
@@ -161,11 +165,42 @@ namespace Markt2Go.Services.ReservationService
         }
 
 
-        public async Task<ServiceResponse<GetReservationDTO>> AddReservation(AddReservationDTO newReservation)
+        public async Task<ServiceResponse<GetReservationDTO>> AddReservation(string userToken, AddReservationDTO newReservation)
         {
             ServiceResponse<GetReservationDTO> serviceResponse = new ServiceResponse<GetReservationDTO>();
             try
-            {
+            {               
+                var user = await _context.Users.FindAsync(newReservation.UserId); 
+                if (user == null)
+                {                    
+                    var userInformation = await _auth0Service.GetUserInfo(userToken);
+
+                    // check if user is verified
+                    if (userInformation.ContainsKey("email_verified") && !Convert.ToBoolean(userInformation["email_verified"].ToString()))
+                    {
+                        serviceResponse.Success = false;
+                        serviceResponse.Message = $"User email is not verified.";
+                        return serviceResponse;
+                    }
+
+                    // check if data from auth0 are valid 
+                    if (!userInformation.ContainsKey("sub") || !userInformation.ContainsKey("name") || !userInformation.ContainsKey("email"))
+                    {
+                        serviceResponse.Success = false;
+                        serviceResponse.Message = $"Could not get all needed user information from auth0.";
+                        return serviceResponse;
+                    }
+
+                    user = new User();
+                    user.Id = userInformation["sub"].ToString();
+                    user.Name = userInformation["name"].ToString();
+                    user.Mail = userInformation["email"].ToString();
+                    user.CreatedAt = DateTime.Now.ToUniversalTime();
+
+                    // user is added to context, but NOT saved to db at this point
+                    await _context.Users.AddAsync(user);
+                }
+
                 var marketSeller = await _context.MarketSellers.Include(x => x.Market).Include(x => x.Seller).FirstOrDefaultAsync(x => x.SellerId == newReservation.SellerId && x.MarketId == newReservation.MarketId);
                 if (marketSeller != null)
                 {
@@ -185,7 +220,15 @@ namespace Markt2Go.Services.ReservationService
                             reservation.MarketSellerId = marketSeller.Id;
                             reservation.CreatedAt = DateTime.Now.ToUniversalTime();
 
-                            // add and save reservation
+                            // add information to user obj if user would be rembered
+                            if (newReservation.RememberMe)
+                            {
+                                user.Firstname = newReservation.Firstname;
+                                user.Lastname = newReservation.Lastname;
+                                user.Phone = newReservation.Phone;
+                            }
+
+                            // add and save reservation (this also saves the user created above)
                             await _context.Reservations.AddAsync(reservation);
                             await _context.SaveChangesAsync();
 
@@ -194,10 +237,8 @@ namespace Markt2Go.Services.ReservationService
                             _context.Entry(reservation.MarketSeller).Reference(x => x.Market).Load();
                             _context.Entry(reservation.MarketSeller).Reference(x => x.Seller).Load();
 
-                            // collect information for mail (no need for a null check -> db constraint would fail if reservation has invalid user id)
-                            var user = await _context.Users.FindAsync(newReservation.UserId);
                             // send user mail
-                            await _mailService.SendReservationConfirmation(user.Mail, CreatePlaceholders(reservation, marketSeller.Market, marketSeller.Seller, user));
+                            await _mailService.SendReservationConfirmation(user.Mail, CreatePlaceholders(reservation, marketSeller.Market, marketSeller.Seller));
                             // send seller mail
                             // TODO: add seller mail 
 
@@ -327,7 +368,7 @@ namespace Markt2Go.Services.ReservationService
                     _context.Reservations.Update(reservation);
                     await _context.SaveChangesAsync();
 
-                    var placeholders = CreatePlaceholders(reservation, reservation.MarketSeller.Market, reservation.MarketSeller.Seller, reservation.User);
+                    var placeholders = CreatePlaceholders(reservation, reservation.MarketSeller.Market, reservation.MarketSeller.Seller);
                     // send user mail(s)
                     // TODO: refactor to only have one SendMail Method
                     if (acceptedChanged)
@@ -457,12 +498,12 @@ namespace Markt2Go.Services.ReservationService
 
             return dbReservations.ToList();
         }
-        private Dictionary<string, string> CreatePlaceholders(Reservation reservation, Market market, Seller seller, User user)
+        private Dictionary<string, string> CreatePlaceholders(Reservation reservation, Market market, Seller seller)
         {
             var itemTable = string.Join("\r\n", reservation.Items.Select(x => $"\t-\t\t {x.Amount.ToString(CultureInfo.GetCultureInfo("de-DE"))} {x.Unit} {x.Name}"));
             return new Dictionary<string, string>()
                 {
-                    { "{recipientName}", $"{reservation.User.Firstname} {reservation.User.Lastname}" },
+                    { "{recipientName}", $"{reservation.Firstname} {reservation.Lastname}" },
                     { "{sellerName}", $"{seller.Name}" },
                     { "{marketName}", $"{market.Name}" },
                     { "{reservationId}", $"{(reservation.Id)}" },

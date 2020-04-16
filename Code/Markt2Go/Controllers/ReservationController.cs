@@ -9,6 +9,7 @@ using Markt2Go.Services.PermissionService;
 using Markt2Go.Services.ReservationService;
 using Markt2Go.Shared.Extensions;
 using Markt2Go.Shared.Enums;
+using Microsoft.AspNetCore.Authentication;
 
 namespace Markt2Go.Controllers
 {
@@ -90,15 +91,11 @@ namespace Markt2Go.Controllers
             if (HttpContext.GetUserIdFromToken() != addedReservation.UserId)
                 return Forbid();
 
-            // check if requester is validated
-            if (!await _permissionService.UserIsValidated(HttpContext.GetUserIdFromToken()))
-                return Forbid();
-
             // check if requester has reached the maximum number of reservations
             if (await _permissionService.MaxDailyReservationsReached(addedReservation.UserId, addedReservation.MarketId, addedReservation.SellerId, addedReservation.Pickup))
                 return Forbid();
 
-            return Ok(await _reservationService.AddReservation(addedReservation));
+            return Ok(await _reservationService.AddReservation(await HttpContext.GetTokenAsync("access_token"), addedReservation));
         }
         /*         
         [HttpPost("{id}/Item")]

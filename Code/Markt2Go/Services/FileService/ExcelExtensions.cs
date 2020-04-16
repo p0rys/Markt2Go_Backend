@@ -43,7 +43,7 @@ namespace Markt2Go.Services.FileService
             worksheet.Cells[row, 2, row, 6].Merge = true;
 
             worksheet.SetValue(row, 1, "Besteller:");
-            worksheet.SetValue(row, 2, $"{reservation.User.Firstname} {reservation.User.Lastname} ({reservation.User.Phone})");      
+            worksheet.SetValue(row, 2, $"{reservation.Firstname} {reservation.Lastname} ({reservation.Phone})");      
             row++;
             
             // return next row

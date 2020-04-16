@@ -103,18 +103,10 @@ namespace Markt2Go.Services.UserService
                     serviceResponse.Success = false;
                     serviceResponse.Message = $"Could not found user with id '{updatedUser.Id}'";
                 }
-                else if (user.IsValidated == true)
-                {
-                    serviceResponse.Success = false;
-                    serviceResponse.Message = $"User with id '{updatedUser.Id}' is already validated and can't be updated";
-                }
                 else
                 {
                     user.Firstname = updatedUser.Firstname;
                     user.Lastname = updatedUser.Lastname;
-                    user.Address = updatedUser.Address;
-                    user.Zip = updatedUser.Zip;
-                    user.Town = updatedUser.Town;
                     user.Phone = updatedUser.Phone;
 
                     _context.Users.Update(user);

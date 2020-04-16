@@ -13,9 +13,12 @@ namespace Markt2Go.DTOs.Reservation
         public string UserId { get; set; }
         public long MarketId { get; set; }
         public long SellerId { get; set; }
+        public string Firstname { get; set; }
+        public string Lastname { get; set; }
+        public string Phone { get; set; }
         public DateTime Pickup { get; set; }
-        public decimal Price { get; set; }
         public string UserComment { get; set; }
+        public decimal Price { get; set; }
         public string SellerComment { get; set; }
         public bool? Accepted { get; set; }
         public bool Packed { get; set; }

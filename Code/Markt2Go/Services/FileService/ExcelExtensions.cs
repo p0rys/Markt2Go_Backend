@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 using Markt2Go.Model;
 using OfficeOpenXml;
 using OfficeOpenXml.Style;
@@ -12,7 +13,7 @@ namespace Markt2Go.Services.FileService
             worksheet.Cells[row, 1, row, 6].Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
             worksheet.Cells[row, 1, row, 6].Merge = true;
 
-            worksheet.SetValue(row, 1, $"{marketName} - {marketDate.ToLongDateString()}" );            
+            worksheet.SetValue(row, 1, $"{marketName} - {marketDate.ToString("D", CultureInfo.GetCultureInfo("de-DE"))}" );            
             row += 2;
 
             return row;
@@ -35,7 +36,7 @@ namespace Markt2Go.Services.FileService
             worksheet.SetValue(row, 1, "Nummer:");
             worksheet.SetValue(row, 2, reservation.Id);
             worksheet.SetValue(row, 5, "Uhrzeit:");
-            worksheet.SetValue(row, 6, reservation.Pickup.ToLocalTime().ToShortTimeString());
+            worksheet.SetValue(row, 6, reservation.Pickup.ToLocalTime().ToString("t", CultureInfo.GetCultureInfo("de-DE")));
             row++;
 
             // second row
